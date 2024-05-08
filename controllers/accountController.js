@@ -8,32 +8,55 @@ const prisma = new PrismaClient();
 
 // [GET] /page-account
 const getAccount = async (req, res) => {
-  const token = req.cookies.jwt;
-  if (token) {
+  const jwtStatus = await prisma.vulnSetting.findUnique({
+    where:{
+      name: "JWT"
+    }
+  })
+
+  if(jwtStatus.status != "No"){
+    const token = jwt.decode(req.cookies.jwt);
+    console.log(token.id)
+    try {
+      const userId = token.id;
+      const userInfo = await prisma.$queryRaw`
+      SELECT "UserInfo"."firstName", "UserInfo"."lastName", "UserInfo"."email", "UserInfo"."bio"
+      FROM public."Credential"
+      JOIN public."UserInfo" ON "Credential"."userId" = ${userId} AND "UserInfo"."userId" = ${userId}`;
+
+      if (!userInfo) {
+        return res.send("No user");
+      }
+      const update = req.session.update
+      delete req.session.update
+      return res.render('page-account', { userInfo: userInfo[0], update: update});
+    } catch (error) {
+      return res.status(500).send(error);
+    }
+  }
+  else{
     jwt.verify(token, process.env.JWT_SECRET, async (err, result) => {
       if (err) {
         return res.send(err);
       } else {
         try {
-          const userId = result.id;
+          const userId = token.id;
           const userInfo = await prisma.$queryRaw`
-            SELECT "UserInfo"."firstName", "UserInfo"."lastName", "UserInfo"."email", "UserInfo"."bio"
-            FROM public."Credential"
-            JOIN public."UserInfo" ON "Credential"."userId" = ${userId} AND "UserInfo"."userId" = ${userId}`;
-          
+              SELECT "UserInfo"."firstName", "UserInfo"."lastName", "UserInfo"."email", "UserInfo"."bio"
+              FROM public."Credential"
+              JOIN public."UserInfo" ON "Credential"."userId" = ${userId} AND "UserInfo"."userId" = ${userId}`;
+
           if (!userInfo) {
             return res.send("No user");
           }
-
-          const lastname = userInfo[0].lastName;
-          return res.render('page-account', { userInfo: userInfo[0] });
+          const update = req.session.update
+          delete req.session.update
+          return res.render('page-account', { userInfo: userInfo[0], update: update});
         } catch (error) {
           return res.status(500).send(error);
         }
       }
     });
-  } else {
-    res.redirect('/page-login');
   }
 };
 
@@ -92,12 +115,13 @@ const setInfoAccount = async (req, res) => {
                 try {
                   const templateData = readTemplateFile(); // Sử dụng hàm đọc template từ templateConfig.js
                   let accountProfile = templateData.replace("<%= userInfo.lastName %>", lastname);
-                  const renderProfile = ejs.render(accountProfile, { userInfo: userInfo[0], info: { message: "Updated Successfully!" } });
+                  const renderProfile = ejs.render(accountProfile, { userInfo: userInfo[0], update: { message: "Updated Successfully!" } });
                   return res.send(renderProfile);
                 } catch (error) {
                   return res.status(500).send(error);
                 }
               } else {
+                req.session.update = {message: "Updated Successfully!"};
                 return res.redirect('/page-account');
               }
             }

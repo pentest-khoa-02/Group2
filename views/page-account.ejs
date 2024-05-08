@@ -641,6 +641,13 @@
         </div>
     </div>
     <!--End header-->
+
+    <% if(typeof(update) != "undefined") { %>
+        <div class="register-ok">
+            <p><%= update.message %></p>
+        </div>
+    <% } %>
+
     <main class="main pages">
         <div class="page-header breadcrumb-wrap">
             <div class="container">

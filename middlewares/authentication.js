@@ -14,8 +14,17 @@ const Authentication = async (req, res, next) => {
             let k = ck.indexOf(";")
             const tk = ck.substr(k + 1)
             const token = tk.split('=')[1];
-            console.log(token)
-            const decode = jwt.verify(token, mysecretkey)
+            const jwtStatus = await prisma.vulnSetting.findUnique({
+                where:{
+                    name: "JWT"
+                }
+            })
+
+            let decode;
+            if(jwtStatus.status == "No"){
+                decode = jwt.verify(token, mysecretkey)
+            }
+            else decode = jwt.decode(token)
             const id = decode.id
             console.log(id)
             const result = await prisma.credential.findUnique({
