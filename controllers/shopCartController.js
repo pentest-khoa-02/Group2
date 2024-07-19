@@ -1,8 +1,6 @@
 import libxmljs from "libxmljs"
 import xml2js from "xml2js"
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient()
+import prisma from "../models/prisma";
 
 // [GET] shop-cart
 const getShopCart = (req, res) => {
@@ -11,12 +9,6 @@ const getShopCart = (req, res) => {
 
 // [POST] shop-cart
 const addCart = async (req, res) => {
-  // const xmlData = `<?xml version="1.0" encoding="UTF-8"?>
-  // <!DOCTYPE data [
-  // <!ENTITY example SYSTEM "file:///etc/passwd">
-  // ]>
-  // <data>&example;</data>`;
-
   try {
     let xmlDoc
     const xxeStatus = await prisma.vulnSetting.findUnique({
@@ -24,7 +16,6 @@ const addCart = async (req, res) => {
         name: "XXE"
       }
     })
-    console.log(xxeStatus.status)
     if(xxeStatus.status === "No") {
       const blacklists = ['<!ENTITY', '<!DOCTYPE', '%', '&', ';', 'SYSTEM']
       for(let i = 0; i < blacklists.length; i++) {
@@ -33,12 +24,13 @@ const addCart = async (req, res) => {
           return res.json({ message: 'Error input!', redirectUrl: '/shop-cart' })
         }
       }
-      xmlDoc = libxmljs.parseXml(req.body, { replaceEntities: false, preserveWhitespace: true })
-      const productIdNode = xmlDoc.get('//productId')
-      const quantityNode = xmlDoc.get('//quantity')
-      const productId = productIdNode ? productIdNode.text() : undefined
-      const quantity = quantityNode ? quantityNode.text() : undefined
+
+      const result = await xml2js.parseStringPromise(req.body, {explicitArray: false, trim: true, preserveWhitespace: true})
+      const productId = result.product.productId;
+      const quantity = result.product.quantity;
+
       const data = {
+        message: "success",
         productId: productId,  
         quantity: quantity,                
         redirectUrl: '/shop-cart'      
@@ -47,38 +39,21 @@ const addCart = async (req, res) => {
     }
     else {
       xmlDoc = libxmljs.parseXml(req.body, { replaceEntities: true, preserveWhitespace: true })
-      console.log(xmlDoc.toString())
       const productIdNode = xmlDoc.get('//productId')
       const quantityNode = xmlDoc.get('//quantity')
       const productId = productIdNode ? productIdNode.text() : undefined
       const quantity = quantityNode ? quantityNode.text() : undefined
-      if(xxeStatus.status === "Retrieve file") {
-        console.log('Retrieve file!')
-        const data = {
-          productId: productId,  
-          quantity: quantity,                
-          redirectUrl: '/shop-cart'      
-        };
-        return res.json(data);
-      }
-      else if(xxeStatus.status === "Blind") {
-        console.log('Blind!')
-        if(req.body.includes('&')) {
-          const data = {    
-            message: 'Input have invalid character!',     
-            redirectUrl: '/shop-cart'      
-          };
-          return res.json(data);
-        }
-        const data = {             
-          redirectUrl: '/shop-cart'      
-        };
-        return res.json(data);
-      }
+      const data = {
+        message: "success",
+        productId: productId,  
+        quantity: quantity,                
+        redirectUrl: '/shop-cart'      
+      };
+      return res.json(data);
     }
   } catch (error) {
     console.error("Error parsing XML:", error)
-    return res.json({ message: 'Error input!', redirectUrl: '/shop-cart' })
+    return res.json({ message: error, redirectUrl: '/shop-cart' })
   }
 }
 
