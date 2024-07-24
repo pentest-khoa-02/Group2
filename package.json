@@ -30,6 +30,7 @@
     "connect-flash": "^0.1.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "dns": "^0.2.2",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.6",
     "entities": "^5.0.0",
@@ -40,6 +41,7 @@
     "express-validator": "^7.0.1",
     "express-xml-bodyparser": "^0.3.0",
     "fs": "^0.0.1-security",
+    "helmet-csp": "^4.0.0",
     "jsonwebtoken": "^3.1.1",
     "jwk-to-pem": "^2.0.5",
     "libxmljs": "^1.0.11",
@@ -50,6 +52,7 @@
     "pg": "^8.11.3",
     "readline": "^1.3.0",
     "req-flash": "^0.0.3",
+    "validator": "^13.12.0",
     "xml2js": "^0.6.2",
     "xmldom": "^0.6.0"
   },
