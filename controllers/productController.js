@@ -87,16 +87,22 @@ const searchProduct = async (req, res) => {
         }
       }
       product = await productService.getProductByName(name);
+      if(!product) {
+        return res.send(`Found product :)) but i don't show for you. Quantities > 0`)
+      }
+      else {
+        return res.send("Not found product!!! Quantity: 0")
+      }
     }
     else if(SQLIstatus.status === "Blind SQLI"){
       // `product = await prisma.$queryRawUnsafe(`SELECT title, picture, summary, description from public."Product" where "title" = "${name}"`)`
       product = await db.Client.query(`SELECT title, picture, summary, description FROM public."Product" WHERE title LIKE '${name}%'`)
-    }
-    if(product.rows.length > 0) {
-      return res.send(`Found product :)) but i don't show for you. Quantities: ${product.rows.length}`)
-    }
-    else {
-      return res.send("Not found product!!!")
+      if(product.rows.length > 0) {
+        return res.send(`Found product :)) but i don't show for you. Quantities > 0`)
+      }
+      else {
+        return res.send("Not found product!!! Quantity: 0")
+      }
     }
   }
   catch(err){
